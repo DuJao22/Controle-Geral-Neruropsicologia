@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Sistema Neuropsicológico</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('admin_dashboard') }}">
+                <i class="fas fa-brain me-2"></i>
+                Sistema Neuropsicológico
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="medicosDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-md me-1"></i>Médicos
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('novo_medico') }}">
+                                <i class="fas fa-plus me-1"></i>Novo Médico
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('listar_medicos') }}">
+                                <i class="fas fa-list me-1"></i>Listar Médicos
+                            </a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>{{ session.user_name }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt me-1"></i>Sair
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Welcome Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h1 class="card-title mb-1">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Dashboard Administrativo
+                        </h1>
+                        <p class="card-text mb-0">Gerencie médicos, monitore pacientes e acompanhe o faturamento</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Statistics Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Médicos Ativos</h6>
+                                <h3 class="mb-0">{{ stats.total_medicos }}</h3>
+                            </div>
+                            <i class="fas fa-user-md fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Pacientes Ativos</h6>
+                                <h3 class="mb-0">{{ stats.total_pacientes }}</h3>
+                            </div>
+                            <i class="fas fa-users fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Sessões Realizadas</h6>
+                                <h3 class="mb-0">{{ stats.total_sessoes }}</h3>
+                            </div>
+                            <i class="fas fa-calendar-check fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Faturamento Total</h6>
+                                <h3 class="mb-0">R$ {{ "%.2f"|format(stats.total_faturamento) }}</h3>
+                            </div>
+                            <i class="fas fa-dollar-sign fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts for patients near deadline -->
+        {% if pacientes_alerta %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Pacientes Próximos do Prazo
+                    </h5>
+                    <div class="row">
+                        {% for alerta in pacientes_alerta %}
+                        <div class="col-md-4 mb-2">
+                            <strong>{{ alerta.nome }}</strong> ({{ alerta.medico }})<br>
+                            <small class="text-muted">
+                                Prazo: {{ alerta.data_limite }} 
+                                ({{ alerta.sessoes_realizadas }} sessões realizadas)
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bolt me-2"></i>
+                            Ações Rápidas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <a href="{{ url_for('novo_medico') }}" class="btn btn-primary w-100 btn-lg">
+                                    <i class="fas fa-user-md fa-lg mb-2 d-block"></i>
+                                    Novo Médico
+                                </a>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <a href="{{ url_for('listar_medicos') }}" class="btn btn-outline-primary w-100 btn-lg">
+                                    <i class="fas fa-list fa-lg mb-2 d-block"></i>
+                                    Listar Médicos
+                                </a>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <a href="{{ url_for('admin_laudos_pacientes') }}" class="btn btn-outline-success w-100 btn-lg">
+                                    <i class="fas fa-file-medical fa-lg mb-2 d-block"></i>
+                                    Laudos e Pacientes
+                                </a>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <button class="btn btn-outline-info w-100 btn-lg" onclick="showReports()">
+                                    <i class="fas fa-chart-bar fa-lg mb-2 d-block"></i>
+                                    Relatórios
+                                </button>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <button class="btn btn-outline-success w-100 btn-lg" onclick="exportData()">
+                                    <i class="fas fa-download fa-lg mb-2 d-block"></i>
+                                    Exportar Dados
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-3 mb-4">
+            <!-- Revenue by Doctor Chart -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Faturamento por Médico
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="faturamentoChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Password Types Chart -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Tipos de Senhas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="tiposChart" height="150"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Sessions Table -->
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar me-2"></i>
+                            Sessões Recentes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if sessoes_recentes %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-primary">
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Paciente</th>
+                                            <th>Médico</th>
+                                            <th>Sessão</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for sessao in sessoes_recentes %}
+                                        <tr>
+                                            <td>{{ sessao.data }}</td>
+                                            <td>{{ sessao.paciente }}</td>
+                                            <td>{{ sessao.medico }}</td>
+                                            <td>
+                                                <span class="badge bg-info">{{ sessao.numero }}ª sessão</span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-calendar fa-2x text-muted mb-3"></i>
+                                <p class="text-muted">Nenhuma sessão registrada recentemente</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer com Créditos -->
+    <footer class="mt-5">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-system-name">
+                    <i class="fas fa-brain me-2"></i>
+                    Sistema Neuropsicológico - Administração
+                </div>
+                <div class="footer-credits">
+                    Desenvolvido por <strong>João Layon</strong>
+                </div>
+                <p class="footer-description">
+                    Painel administrativo para gestão completa do sistema
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load chart data from API
+        fetch('/api/dashboard_data')
+            .then(response => response.json())
+            .then(data => {
+                createFaturamentoChart(data.faturamento);
+                createTiposChart(data.tipos_senhas);
+            })
+            .catch(error => {
+                console.error('Error loading chart data:', error);
+            });
+
+        function createFaturamentoChart(data) {
+            const ctx = document.getElementById('faturamentoChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item.nome),
+                    datasets: [{
+                        label: 'Faturamento (R$)',
+                        data: data.map(item => item.total),
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createTiposChart(data) {
+            const ctx = document.getElementById('tiposChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(item => item.tipo.charAt(0).toUpperCase() + item.tipo.slice(1)),
+                    datasets: [{
+                        data: data.map(item => item.count),
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function showReports() {
+            window.location.href = '{{ url_for("relatorio_admin") }}';
+        }
+
+        function exportData() {
+            alert('Funcionalidade de exportação em desenvolvimento');
+        }
+    </script>
+
+    <style>
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-group .btn {
+            margin-right: 2px;
+        }
+        
+        .alert-warning {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+    </style>
+</body>
+</html>
