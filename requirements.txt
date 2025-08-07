@@ -1,3 +1,4 @@
-Flask>=2.3.0
-sqlitecloud>=0.3.0
-gunicorn>=21.2.0
+Flask
+sqlitecloud
+gunicorn
+
