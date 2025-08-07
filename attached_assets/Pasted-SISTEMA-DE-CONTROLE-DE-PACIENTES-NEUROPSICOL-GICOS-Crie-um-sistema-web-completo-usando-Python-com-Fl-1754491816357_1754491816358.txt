@@ -1,0 +1,115 @@
+SISTEMA DE CONTROLE DE PACIENTES NEUROPSICOLÓGICOS
+Crie um sistema web completo usando Python com Flask, SQLite3 (sem SQLAlchemy), Jinja2 para os templates e HTML/CSS embutido, com foco em controle de pacientes, sessões, senhas e laudos de neuropsicologia.
+
+🗂️ Estrutura desejada:
+Utilizar a estrutura de pastas padrão:
+
+/templates para páginas HTML (com Jinja2)
+
+/static para CSS/JS (incluir Chart.js para dashboards)
+
+/database para o arquivo SQLite3
+
+app.py como arquivo principal do Flask
+
+🔐 Sistema com 2 tipos de usuários:
+Admin
+
+Acesso total ao sistema
+
+Dashboard com gráficos estilo Power BI usando Chart.js
+
+Cadastro de médicos e pacientes
+
+Visualização de todas as sessões e senhas
+
+Controle de senhas de convênio:
+
+Consulta Neuropsicologia (Código: 60010363 – R$ 100,00)
+
+Teste Neuropsicologia (Código: 60010363 – R$ 800,00)
+
+Controle de laudos finais
+
+Visualização de faturamento por médico
+
+Tabela com resumo dos atendimentos
+
+Médico
+
+Login com email e senha
+
+Visualização apenas dos seus pacientes
+
+Cadastro e edição das sessões (até 8 sessões no total)
+
+Pode inserir senha de consulta e senha de teste até a 4ª sessão
+
+Upload do laudo final do paciente (PDF)
+
+Pode marcar o paciente como "Finalizado"
+
+📊 Dashboard do Admin:
+Total de médicos ativos
+
+Total de pacientes ativos
+
+Total de sessões realizadas
+
+Total de senhas lançadas
+
+Total de faturamento (somando os valores das senhas)
+
+Faturamento por médico (em gráfico de barras)
+
+Gráfico de pizza (senhas de consulta vs senhas de teste)
+
+Timeline de sessões
+
+📅 Regras de negócio:
+Cada paciente tem no máximo 8 sessões para receber o laudo
+
+Prazo limite: 60 dias após data de início
+
+Senhas de convênio só podem ser cadastradas até a 4ª sessão
+
+As senhas devem ter um campo "status": pendente, liberada, utilizada
+
+🗃️ Banco de dados em SQLite3 (sem ORM):
+Crie o banco com tabelas:
+
+medicos(id, nome, email, senha, crm)
+
+pacientes(id, nome, cpf, data_inicio, data_limite, status, medico_id)
+
+sessoes(id, paciente_id, numero, data, observacoes)
+
+senhas(id, paciente_id, tipo, numero, valor, status)
+
+laudos(id, paciente_id, caminho_arquivo, data_upload)
+
+📄 Templates HTML:
+login.html: Login para médicos e admin
+
+admin_dashboard.html: Dashboard completo com cards e gráficos interativos
+
+medico_dashboard.html: Lista de pacientes do médico
+
+paciente_detalhes.html: Página com controle de sessões, senhas e upload de laudo
+
+novo_paciente.html: Cadastro de pacientes
+
+✅ Outras exigências:
+Responsivo para celular
+
+CSS com paleta de cores verde
+
+Upload seguro de arquivos PDF (laudos)
+
+Senhas inseridas uma única vez por tipo
+
+Laudo final só permitido após 8 sessões (ou com botão "Finalizar paciente")
+
+Mostrar alerta de pacientes próximos do limite de 60 dias
+
+Crie o sistema pronto para rodar localmente com flask run, com tudo funcionando corretamente.

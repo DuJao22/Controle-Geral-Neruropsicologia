@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Minha Área - {{ paciente.nome }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header do Paciente -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-user-injured text-primary"></i> Olá, {{ paciente.nome }}!</h2>
+            <p class="text-muted">Bem-vindo à sua área pessoal</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('paciente_logout') }}" class="btn btn-outline-danger">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Informações do Paciente -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Suas Informações</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Nome:</strong></td>
+                            <td>{{ paciente.nome }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CPF:</strong></td>
+                            <td>{{ paciente.cpf[:3] + '.' + paciente.cpf[3:6] + '.' + paciente.cpf[6:9] + '-' + paciente.cpf[9:] if paciente.cpf|length == 11 else paciente.cpf }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Médico:</strong></td>
+                            <td>{{ paciente.medico_nome }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Local de Atendimento:</strong></td>
+                            <td>
+                                <span class="badge bg-info">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ paciente.localizacao }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Início do Tratamento:</strong></td>
+                            <td>{{ paciente.data_inicio }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Prazo para Entrega do Laudo:</strong></td>
+                            <td>{{ paciente.data_limite }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if paciente.status == 'ativo' else 'secondary' }}">
+                                    {{ paciente.status.title() }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas Rápidas -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Progresso do Tratamento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h3 class="text-info">{{ total_sessoes }}</h3>
+                                <p class="text-muted mb-0">Sessões<br>Realizadas</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-{{ 'success' if dias_restantes > 14 else 'warning' if dias_restantes > 0 else 'danger' }}">
+                                {{ dias_restantes if dias_restantes > 0 else 0 }}
+                            </h3>
+                            <p class="text-muted mb-0">Dias para<br>Entrega do Laudo</p>
+                        </div>
+                    </div>
+
+                    {% if dias_restantes <= 7 and dias_restantes > 0 %}
+                        <div class="alert alert-warning mt-3 mb-0">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            <strong>Atenção:</strong> Prazo para entrega do laudo expira em breve!
+                        </div>
+                    {% elif dias_restantes <= 0 %}
+                        <div class="alert alert-danger mt-3 mb-0">
+                            <i class="fas fa-times-circle"></i> 
+                            <strong>Prazo Expirado!</strong> Entre em contato com seu médico sobre o laudo.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Laudos Disponíveis -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-medical"></i> Meus Laudos ({{ laudos|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if laudos %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th><i class="fas fa-file-pdf text-danger"></i> Arquivo</th>
+                                        <th><i class="fas fa-calendar"></i> Data do Upload</th>
+                                        <th class="text-center"><i class="fas fa-download"></i> Download</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for laudo in laudos %}
+                                        <tr>
+                                            <td>
+                                                <i class="fas fa-file-pdf text-danger me-2"></i>
+                                                {{ laudo.nome_arquivo }}
+                                            </td>
+                                            <td>
+                                                <i class="fas fa-clock text-muted me-1"></i>
+                                                {{ laudo.data_upload }}
+                                            </td>
+                                            <td class="text-center">
+                                                <a href="{{ url_for('paciente_download_laudo', laudo_id=laudo.id) }}" 
+                                                   class="btn btn-success btn-sm">
+                                                    <i class="fas fa-download"></i> Baixar
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-medical-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Nenhum laudo disponível</h5>
+                            <p class="text-muted">
+                                Seus laudos aparecerão aqui quando forem disponibilizados pelo seu médico.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações de Contato -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informações Importantes</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Prazo do laudo:</strong> O médico tem 2 meses (60 dias) para entregar seu laudo completo</li>
+                        <li><strong>Dúvidas sobre seu tratamento:</strong> Entre em contato com {{ paciente.medico_nome }}</li>
+                        <li><strong>Problemas técnicos:</strong> Entre em contato com a recepção</li>
+                        <li><strong>Seus dados são confidenciais:</strong> Apenas você e sua equipe médica têm acesso</li>
+                        <li><strong>Mantenha seus laudos seguros:</strong> Não compartilhe com terceiros não autorizados</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
