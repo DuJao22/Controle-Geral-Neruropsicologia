@@ -1,1 +1,0 @@
-# Controle-Geral-Neruropsicologia
